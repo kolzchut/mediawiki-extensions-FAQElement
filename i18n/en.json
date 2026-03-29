@@ -1,0 +1,6 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"faqelement-desc": "Renders FAQ question-and-answer sections and injects [[mw:Schema.org|FAQPage]] JSON-LD structured data into the page head."
+}

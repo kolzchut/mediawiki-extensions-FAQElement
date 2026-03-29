@@ -1,0 +1,6 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"faqelement-desc": "מרנדר שאלות ותשובות ומוסיף נתוני [[mw:Schema.org|FAQPage]] בפורמט JSON-LD לכותרת הדף."
+}

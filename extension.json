@@ -1,0 +1,47 @@
+{
+	"name": "FAQElement",
+	"version": "1.0.0",
+	"author": [ "Kol-Zchut" ],
+	"url": "",
+	"descriptionmsg": "faqelement-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.35.0"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\FAQElement\\": "src/"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\FAQElement\\Hooks",
+			"services": [ "MainConfig" ]
+		}
+	},
+	"Hooks": {
+		"ParserFirstCallInit": "main",
+		"OutputPageParserOutput": "main"
+	},
+	"ResourceModules": {
+		"ext.faqelement.styles": {
+			"styles": "resources/ext.faqelement.less"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "FAQElement"
+	},
+	"ExtensionMessagesFiles": {
+		"FAQElementMagic": "FAQElement.i18n.magic.php"
+	},
+	"MessagesDirs": {
+		"FAQElement": [ "i18n" ]
+	},
+	"config": {
+		"FAQElementOutputSchema": {
+			"value": true,
+			"description": "When true (default), a FAQPage JSON-LD <script> block is injected into the <head> of any page that contains {{#faq:}} calls."
+		}
+	},
+	"manifest_version": 2
+}
