@@ -101,6 +101,8 @@ class Hooks implements ParserFirstCallInitHook, OutputPageParserOutputHook {
 			if ( preg_match( '/^\s*open\s*=\s*(.+)/i', trim( $arg ), $m ) ) {
 				$val = strtolower( trim( $m[1] ) );
 				$open = ( $val === 'yes' || $val === '1' || $val === 'true' );
+			} else {
+				$content .= $arg;
 			}
 		}
 
@@ -150,7 +152,10 @@ class Hooks implements ParserFirstCallInitHook, OutputPageParserOutputHook {
 			'mainEntity' => $entities,
 		];
 
-		$json = json_encode( $schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT );
+		$json = json_encode( $schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_HEX_TAG );
+		if ( $json === false ) {
+			return;
+		}
 
 		$out->addHeadItem(
 			'faqelement-jsonld',
@@ -170,7 +175,7 @@ class Hooks implements ParserFirstCallInitHook, OutputPageParserOutputHook {
 	 * @return string
 	 */
 	private static function parseToHtml( Parser $parser, string $wikitext ): string {
-		return $parser->recursiveTagParse( $wikitext );
+		return $parser->recursiveTagParseFully( $wikitext );
 	}
 
 	/**

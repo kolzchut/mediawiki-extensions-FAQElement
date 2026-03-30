@@ -9,6 +9,11 @@
 	outline: none;
 	transition: background-color 0.2s ease;
 
+	&:focus-visible {
+		outline: 2px solid var( --content-accent-color, #5b8031 );
+		outline-offset: -2px;
+	}
+
 	&:hover {
 		background-color: rgba( 242, 246, 252, 0.5 );
 	}
