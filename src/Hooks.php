@@ -152,7 +152,10 @@ class Hooks implements ParserFirstCallInitHook, OutputPageParserOutputHook {
 			'mainEntity' => $entities,
 		];
 
-		$json = json_encode( $schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_HEX_TAG );
+		$json = json_encode(
+			$schema,
+			JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_HEX_TAG
+		);
 		if ( $json === false ) {
 			return;
 		}
