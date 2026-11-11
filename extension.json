@@ -1,6 +1,6 @@
 {
 	"name": "FAQElement",
-	"version": "1.0.0",
+	"version": "2.0.0",
 	"author": [ "Kol-Zchut" ],
 	"url": "",
 	"descriptionmsg": "faqelement-desc",
@@ -14,8 +14,7 @@
 	},
 	"HookHandlers": {
 		"main": {
-			"class": "MediaWiki\\Extension\\FAQElement\\Hooks",
-			"services": [ "MainConfig" ]
+			"class": "MediaWiki\\Extension\\FAQElement\\Hooks"
 		}
 	},
 	"Hooks": {
@@ -36,12 +35,6 @@
 	},
 	"MessagesDirs": {
 		"FAQElement": [ "i18n" ]
-	},
-	"config": {
-		"FAQElementOutputSchema": {
-			"value": true,
-			"description": "When true (default), a FAQPage JSON-LD <script> block is injected into the <head> of any page that contains {{#faq:}} calls."
-		}
 	},
 	"manifest_version": 2
 }

@@ -1,9 +1,10 @@
 # FAQElement
 
-A MediaWiki extension that renders collapsible FAQ sections and automatically
-injects [FAQPage](https://schema.org/FAQPage) JSON-LD structured data into the
-page `<head>`, improving how search engines (particularly Google) understand and
-display FAQ content.
+A MediaWiki extension that renders collapsible FAQ sections and records their
+questions and answers for [FAQPage](https://schema.org/FAQPage) structured data.
+The JSON-LD itself is emitted by
+[StructuredData](https://github.com/kolzchut/mediawiki-extensions-StructuredData),
+together with the page's other schema.org data.
 
 ## Requirements
 
@@ -31,7 +32,7 @@ The extension provides two parser functions.
 
 Renders as a `<details>`/`<summary>` disclosure widget: the question is always
 visible, the answer is revealed on click. The question and answer are also
-recorded for the page's JSON-LD schema output.
+recorded for the page's FAQPage structured data.
 
 ### `{{#faq_group:}}` — a titled group of questions
 
@@ -82,45 +83,21 @@ With these templates in place, editors can write:
 }}
 ```
 
-## Configuration
+## Structured data
 
-Add any of the following to `LocalSettings.php` to override defaults:
+Since version 2.0.0 this extension emits no JSON-LD. Each `{{#faq:}}` call
+stores its question and answer, as plain text, in the parser output's extension
+data under `faqelement_items` (`Hooks::DATA_KEY`): a list of
+`[ 'question' => …, 'answer' => … ]` in page order. All questions from the
+page, standalone or inside groups, are in that one flat list; group titles are
+not, as the schema.org FAQPage type has no concept of groups.
 
-```php
-// Disable JSON-LD schema output (HTML widgets are still rendered normally)
-$wgFAQElementOutputSchema = false;
-```
+[StructuredData](https://github.com/kolzchut/mediawiki-extensions-StructuredData)
+reads that list and adds the FAQPage to the page's JSON-LD `@graph`. The key and
+the shape of its value are therefore an interface between the two extensions.
 
-| Variable | Default | Description |
-|---|---|---|
-| `$wgFAQElementOutputSchema` | `true` | Inject a FAQPage JSON-LD `<script>` block into the `<head>` of pages that contain `{{#faq:}}` calls. Set to `false` to render the collapsible widgets without emitting structured data. |
-
-## Schema output
-
-When a page contains at least one `{{#faq:}}` call and `$wgFAQElementOutputSchema`
-is `true` (the default), the extension injects a single
-`<script type="application/ld+json">` block into the page `<head>`:
-
-```json
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "How do I register?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Click \"Sign up\" on the homepage."
-      }
-    }
-  ]
-}
-```
-
-All questions from the page — whether standalone or inside groups — are
-collected into a single flat `mainEntity` array. The `schema.org` FAQPage type
-has no concept of groups, so group titles are intentionally excluded.
+The `$wgFAQElementOutputSchema` setting is gone. StructuredData's
+`$wgStructuredDataFAQ` switches the FAQPage on and off.
 
 ## How it works
 
@@ -131,18 +108,15 @@ has no concept of groups, so group titles are intentionally excluded.
    ones, `{{#faq:}}` items inside a `{{#faq_group:}}` are processed first and
    their data is accumulated before the group wrapper runs. The group itself
    (`Hooks::renderFAQGroup()`) only wraps the already-rendered child HTML in a
-   `<div>` — it does not touch the schema data at all.
+   `<div>` — it does not touch the FAQ data at all.
 
-2. **Schema injection** — The `BeforePageDisplay` hook fires once per page view
-   after parsing is complete. `Hooks::onBeforePageDisplay()` reads the
-   accumulated items from `ParserOutput` and, if any exist, serialises them as
-   JSON-LD and calls `$out->addHeadItem()` to insert the `<script>` block.
-   `BeforePageDisplay` is used (rather than `OutputPageBeforeHTML`) because it
-   fires exactly once per page view and its output is correctly cached.
+2. **Styles** — `OutputPageParserOutput` adds the `ext.faqelement.styles`
+   module to pages that have FAQ items. Building the FAQPage JSON-LD from the
+   accumulated items is StructuredData's job.
 
 3. **Parser cache** — The FAQ item data is stored via
    `ParserOutput::setExtensionData()`, which is cache-aware. Cached pages
-   correctly retain their schema data across requests without re-parsing.
+   correctly retain their FAQ data across requests without re-parsing.
 
 ## Migration from `{{שאלה ותשובה}}`
 
