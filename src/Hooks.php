@@ -2,7 +2,6 @@
 
 namespace MediaWiki\Extension\FAQElement;
 
-use Config;
 use MediaWiki\Hook\OutputPageParserOutputHook;
 use MediaWiki\Hook\ParserFirstCallInitHook;
 use Parser;
@@ -15,23 +14,20 @@ use Parser;
  *   {{#faq_group: title | ...faq items... }}
  *
  * Each {{#faq:}} call accumulates its question/answer into ParserOutput
- * extension data. OutputPageParserOutput reads that data and injects a single
- * FAQPage JSON-LD <script> block into the page <head> (when the
- * FAQElementOutputSchema config option is true).
+ * extension data under DATA_KEY. Extension:StructuredData reads that data and
+ * builds the page's FAQPage JSON-LD from it; this extension no longer emits
+ * any JSON-LD itself.
  */
 class Hooks implements ParserFirstCallInitHook, OutputPageParserOutputHook {
 
-	// Key used to store FAQ data in ParserOutput extension data
-	private const DATA_KEY = 'faqelement_items';
-
-	private Config $config;
-
 	/**
-	 * @param Config $config
+	 * ParserOutput extension data key holding the page's questions, as a list of
+	 * [ 'question' => plain text, 'answer' => plain text ] in page order.
+	 * Extension:StructuredData reads it to build the FAQPage JSON-LD, so the key
+	 * and the shape of its value are an interface: change them only together
+	 * with StructuredData.
 	 */
-	public function __construct( Config $config ) {
-		$this->config = $config;
-	}
+	public const DATA_KEY = 'faqelement_items';
 
 	/**
 	 * @inheritDoc
@@ -119,51 +115,14 @@ class Hooks implements ParserFirstCallInitHook, OutputPageParserOutputHook {
 	}
 
 	/**
-	 * Inject FAQPage JSON-LD and the CSS module into the page if it has FAQ items.
+	 * Load the CSS module on pages that have FAQ items.
 	 *
 	 * @inheritDoc
 	 */
 	public function onOutputPageParserOutput( $out, $parserOutput ): void {
-		$items = $parserOutput->getExtensionData( self::DATA_KEY );
-		if ( !$items ) {
-			return;
+		if ( $parserOutput->getExtensionData( self::DATA_KEY ) ) {
+			$out->addModuleStyles( 'ext.faqelement.styles' );
 		}
-
-		$out->addModuleStyles( 'ext.faqelement.styles' );
-
-		if ( !$this->config->get( 'FAQElementOutputSchema' ) ) {
-			return;
-		}
-
-		$entities = array_map( static function ( array $item ) {
-			return [
-				'@type' => 'Question',
-				'name'  => $item['question'],
-				'acceptedAnswer' => [
-					'@type' => 'Answer',
-					'text'  => $item['answer'],
-				],
-			];
-		}, $items );
-
-		$schema = [
-			'@context'   => 'https://schema.org',
-			'@type'      => 'FAQPage',
-			'mainEntity' => $entities,
-		];
-
-		$json = json_encode(
-			$schema,
-			JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_HEX_TAG
-		);
-		if ( $json === false ) {
-			return;
-		}
-
-		$out->addHeadItem(
-			'faqelement-jsonld',
-			'<script type="application/ld+json">' . $json . '</script>'
-		);
 	}
 
 	/**
@@ -195,7 +154,8 @@ class Hooks implements ParserFirstCallInitHook, OutputPageParserOutputHook {
 	/**
 	 * Append a question/answer pair to the ParserOutput extension data list.
 	 * Accepts already-parsed HTML; strips it to plain text for the schema.
-	 * Uses setExtensionData rather than global state so it is cache-safe.
+	 * Uses setExtensionData rather than global state so it is cache-safe. The
+	 * stored list is what Extension:StructuredData reads (see DATA_KEY).
 	 *
 	 * @param Parser $parser
 	 * @param string $parsedQuestion Already-parsed HTML of the question

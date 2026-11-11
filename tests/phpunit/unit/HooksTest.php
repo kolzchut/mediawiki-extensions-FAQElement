@@ -2,7 +2,6 @@
 
 namespace MediaWiki\Extension\FAQElement\Tests\Unit;
 
-use HashConfig;
 use MediaWiki\Extension\FAQElement\Hooks;
 use MediaWikiUnitTestCase;
 use OutputPage;
@@ -162,69 +161,34 @@ class HooksTest extends MediaWikiUnitTestCase {
 	// ── onOutputPageParserOutput ───────────────────────────────────────────────
 
 	public function testOutputPageDoesNothingWithNoItems(): void {
-		$hooks = new Hooks( new HashConfig( [ 'FAQElementOutputSchema' => true ] ) );
 		$out = $this->createMock( OutputPage::class );
 		$out->expects( $this->never() )->method( 'addModuleStyles' );
 		$out->expects( $this->never() )->method( 'addHeadItem' );
 
-		$hooks->onOutputPageParserOutput( $out, $this->parserOutput );
+		( new Hooks() )->onOutputPageParserOutput( $out, $this->parserOutput );
 	}
 
-	public function testOutputPageAddsStylesAndJsonLd(): void {
-		$hooks = new Hooks( new HashConfig( [ 'FAQElementOutputSchema' => true ] ) );
+	public function testOutputPageAddsStylesButNoJsonLd(): void {
 		Hooks::renderFAQItem( $this->parser, 'What is foo?', 'Foo is bar.' );
 
 		$out = $this->createMock( OutputPage::class );
 		$out->expects( $this->once() )
 			->method( 'addModuleStyles' )
 			->with( 'ext.faqelement.styles' );
-
-		$headItems = [];
-		$out->method( 'addHeadItem' )
-			->willReturnCallback( static function ( $name, $content ) use ( &$headItems ) {
-				$headItems[$name] = $content;
-			} );
-
-		$hooks->onOutputPageParserOutput( $out, $this->parserOutput );
-
-		$this->assertArrayHasKey( 'faqelement-jsonld', $headItems );
-		$jsonld = $headItems['faqelement-jsonld'];
-		$this->assertStringContainsString( '<script type="application/ld+json">', $jsonld );
-		$this->assertStringContainsString( 'FAQPage', $jsonld );
-		$this->assertStringContainsString( 'What is foo?', $jsonld );
-		$this->assertStringContainsString( 'Foo is bar.', $jsonld );
-	}
-
-	public function testOutputPageAddsStylesButNoSchemaWhenDisabled(): void {
-		$hooks = new Hooks( new HashConfig( [ 'FAQElementOutputSchema' => false ] ) );
-		Hooks::renderFAQItem( $this->parser, 'Q', 'A' );
-
-		$out = $this->createMock( OutputPage::class );
-		$out->expects( $this->once() )->method( 'addModuleStyles' );
+		// Extension:StructuredData builds the FAQPage JSON-LD now.
 		$out->expects( $this->never() )->method( 'addHeadItem' );
 
-		$hooks->onOutputPageParserOutput( $out, $this->parserOutput );
+		( new Hooks() )->onOutputPageParserOutput( $out, $this->parserOutput );
 	}
 
-	public function testJsonLdEscapesAngleBrackets(): void {
-		$hooks = new Hooks( new HashConfig( [ 'FAQElementOutputSchema' => true ] ) );
+	public function testItemsAreStoredUnderThePublicDataKey(): void {
+		// Extension:StructuredData reads this key and this shape.
+		Hooks::renderFAQItem( $this->parser, 'Q', 'A' );
 
-		// Inject stored data directly to test JSON encoding independently of the parser pipeline
-		$this->parserOutput->setExtensionData( 'faqelement_items', [
-			[ 'question' => 'What about </script> injection?', 'answer' => 'Very dangerous.' ],
-		] );
-
-		$out = $this->createMock( OutputPage::class );
-		$headItems = [];
-		$out->method( 'addHeadItem' )
-			->willReturnCallback( static function ( $name, $content ) use ( &$headItems ) {
-				$headItems[$name] = $content;
-			} );
-
-		$hooks->onOutputPageParserOutput( $out, $this->parserOutput );
-
-		// JSON_HEX_TAG encodes < as \u003C and > as \u003E (literal backslash-u sequences),
-		// preventing </script> in data from terminating the enclosing <script> block.
-		$this->assertStringContainsString( '\u003C/script\u003E', $headItems['faqelement-jsonld'] );
+		$this->assertSame(
+			[ [ 'question' => 'Q', 'answer' => 'A' ] ],
+			$this->parserOutput->getExtensionData( Hooks::DATA_KEY )
+		);
+		$this->assertSame( 'faqelement_items', Hooks::DATA_KEY );
 	}
 }
