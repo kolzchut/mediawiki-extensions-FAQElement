@@ -23,6 +23,7 @@ class HooksTest extends MediaWikiUnitTestCase {
 		$this->parser->method( 'getOutput' )->willReturn( $this->parserOutput );
 		// Return wikitext unchanged so tests can match on the original strings
 		$this->parser->method( 'recursiveTagParseFully' )->willReturnArgument( 0 );
+		$this->parser->method( 'recursiveTagParse' )->willReturnArgument( 0 );
 	}
 
 	// ── renderFAQItem ──────────────────────────────────────────────────────────
@@ -156,6 +157,20 @@ class HooksTest extends MediaWikiUnitTestCase {
 		$this->assertStringContainsString( '<details class="faq-group" open>', $html );
 		$this->assertStringContainsString( $faq1, $html );
 		$this->assertStringContainsString( $faq2, $html );
+	}
+
+	public function testFAQGroupContentGoesThroughTheParser(): void {
+		$parser = $this->createMock( Parser::class );
+		$parser->method( 'getOutput' )->willReturn( $this->parserOutput );
+		$parser->expects( $this->once() )
+			->method( 'recursiveTagParse' )
+			->with( 'raw-1raw-2' )
+			->willReturn( 'PARSED' );
+
+		[ $html ] = Hooks::renderFAQGroup( $parser, 'Group', 'raw-1', 'raw-2', 'open=yes' );
+
+		$this->assertStringContainsString( '<div class="faq-group-content">PARSED</div>', $html );
+		$this->assertStringNotContainsString( 'raw-1', $html );
 	}
 
 	// ── onOutputPageParserOutput ───────────────────────────────────────────────

@@ -45,7 +45,11 @@ recorded for the page's FAQPage structured data.
 
 Wraps a set of `{{#faq:}}` items under a visual heading. The group title is
 **not** a question and does **not** appear in the schema — it is purely a
-presentational label.
+presentational label, shown as plain text.
+
+The body is parsed as wikitext, so text between the items (for example a
+short introduction) renders like any other page text, and HTML in it is
+subject to the same rules as everywhere else on the page.
 
 Groups and standalone items can be mixed freely on the same page:
 
@@ -107,8 +111,11 @@ The `$wgFAQElementOutputSchema` setting is gone. StructuredData's
    `faqelement_items`. Because MediaWiki expands inner templates before outer
    ones, `{{#faq:}}` items inside a `{{#faq_group:}}` are processed first and
    their data is accumulated before the group wrapper runs. The group itself
-   (`Hooks::renderFAQGroup()`) only wraps the already-rendered child HTML in a
-   `<div>` — it does not touch the FAQ data at all.
+   (`Hooks::renderFAQGroup()`) parses its body as ordinary wikitext and wraps
+   the result in a `<div>`; it does not touch the FAQ data at all. The child
+   items reach it already rendered, so parsing the body leaves them as they
+   are, while any other text or markup in the body is handled exactly as it
+   would be anywhere else on the page.
 
 2. **Styles** — `OutputPageParserOutput` adds the `ext.faqelement.styles`
    module to pages that have FAQ items. Building the FAQPage JSON-LD from the
