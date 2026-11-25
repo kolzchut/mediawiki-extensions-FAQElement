@@ -34,6 +34,11 @@ Renders as a `<details>`/`<summary>` disclosure widget: the question is always
 visible, the answer is revealed on click. The question and answer are also
 recorded for the page's FAQPage structured data.
 
+The question is shown in bold inside the `<summary>` and is kept to one line
+of inline wikitext (links, italics): it is not wrapped in a paragraph, so a
+blank line or a list inside a question is not supported. The answer is
+ordinary wikitext and may hold several paragraphs.
+
 ### `{{#faq_group:}}` — a titled group of questions
 
 ```wikitext

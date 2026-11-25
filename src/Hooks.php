@@ -48,6 +48,9 @@ class Hooks implements ParserFirstCallInitHook, OutputPageParserOutputHook {
 	 * Renders a <details>/<summary> disclosure widget and records the
 	 * question/answer pair for later JSON-LD output.
 	 *
+	 * The question is rendered as inline markup, without the outer paragraph;
+	 * the answer keeps its paragraphs, since it sits in a <div>.
+	 *
 	 * @param Parser $parser
 	 * @param string $question
 	 * @param string $answer
@@ -57,7 +60,10 @@ class Hooks implements ParserFirstCallInitHook, OutputPageParserOutputHook {
 		$question = trim( $question );
 		$answer = trim( $answer );
 
-		$parsedQuestion = self::parseToHtml( $parser, $question );
+		// The question goes inside <b> in <summary>, where only phrasing content
+		// is allowed, so it must not keep the paragraph that a full parse wraps
+		// around a line of text.
+		$parsedQuestion = Parser::stripOuterParagraph( self::parseToHtml( $parser, $question ) );
 		$parsedAnswer = self::parseToHtml( $parser, $answer );
 
 		self::accumulateItem( $parser, $parsedQuestion, $parsedAnswer );
