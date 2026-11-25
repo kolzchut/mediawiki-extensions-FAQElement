@@ -46,6 +46,25 @@ class HooksTest extends MediaWikiUnitTestCase {
 		$this->assertTrue( $result['isHTML'] );
 	}
 
+	public function testFAQItemQuestionLosesTheOuterParagraph(): void {
+		// What a full parse makes of a one-line question.
+		$parser = $this->createMock( Parser::class );
+		$parser->method( 'getOutput' )->willReturn( $this->parserOutput );
+		$parser->method( 'recursiveTagParseFully' )->willReturnCallback(
+			static fn ( string $text ) => "<p>$text\n</p>"
+		);
+
+		[ $html ] = Hooks::renderFAQItem( $parser, 'What is foo?', 'Foo is bar.' );
+
+		$this->assertStringContainsString(
+			'<summary class="faq-summary"><b>What is foo?</b></summary>', $html );
+		// The answer is block content in a <div> and keeps its paragraph.
+		$this->assertStringContainsString(
+			"<div class=\"faq-content\"><p>Foo is bar.\n</p></div>", $html );
+		$this->assertSame( 'What is foo?',
+			$this->parserOutput->getExtensionData( Hooks::DATA_KEY )[0]['question'] );
+	}
+
 	public function testFAQItemAccumulatesMultipleItems(): void {
 		Hooks::renderFAQItem( $this->parser, 'Q1', 'A1' );
 		Hooks::renderFAQItem( $this->parser, 'Q2', 'A2' );
