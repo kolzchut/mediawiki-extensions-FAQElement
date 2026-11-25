@@ -82,12 +82,19 @@ class Hooks implements ParserFirstCallInitHook, OutputPageParserOutputHook {
 	 * Child {{#faq:}} calls have already been expanded and their data
 	 * already accumulated by the time this function runs.
 	 *
+	 * The content is parsed as wikitext before it is wrapped, like any other
+	 * text on the page. The child items reach this function as strip markers,
+	 * which the parser leaves alone, so they still render; anything else in
+	 * the content is sanitised exactly as ordinary page wikitext would be.
+	 * It must never be concatenated into the output as it arrives.
+	 *
 	 * Named parameters:
 	 *   open=yes   Render the group expanded by default.
 	 *
 	 * @param Parser $parser
 	 * @param string $title Group heading (display only)
-	 * @param string $content Already-rendered HTML of child faq items
+	 * @param string $content Wikitext of the group body, normally the strip
+	 *   markers of child {{#faq:}} items
 	 * @param mixed ...$rest
 	 * @return array [ html, 'noparse' => true, 'isHTML' => true ]
 	 */
@@ -102,12 +109,14 @@ class Hooks implements ParserFirstCallInitHook, OutputPageParserOutputHook {
 			}
 		}
 
+		$parsedContent = $parser->recursiveTagParse( $content );
+
 		$html = '<details class="faq-group"' . ( $open ? ' open' : '' ) . '>'
 			. '<summary class="faq-group-title"><b>'
 			. htmlspecialchars( trim( $title ), ENT_QUOTES )
 			. '</b></summary>'
 			. '<div class="faq-group-content">'
-			. $content
+			. $parsedContent
 			. '</div>'
 			. '</details>';
 
